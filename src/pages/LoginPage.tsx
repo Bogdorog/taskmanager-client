@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 
 import { login } from "@/api/authApi";
 import { useAuth } from "@/context/AuthContext";
+import {getApiErrorMessage} from "@/utils/apiError.ts";
 
 function LoginPage() {
 
@@ -54,13 +55,8 @@ function LoginPage() {
 
             navigate("/");
 
-        } catch (err: any) {
-
-            setError(
-                err?.response?.data?.message ||
-                "Ошибка авторизации"
-            );
-
+        } catch (error: unknown) {
+            setError(getApiErrorMessage(error));
         } finally {
             setLoading(false);
         }
@@ -68,9 +64,11 @@ function LoginPage() {
 
     return (
         <Box
-            display="flex"
-            justifyContent="center"
-            mt={10}
+            sx={{
+                display: "flex",
+                justifyContent: "center",
+                mt: 10,
+            }}
         >
             <Paper
                 elevation={3}
@@ -80,9 +78,11 @@ function LoginPage() {
                 }}
             >
                 <Typography
-                    variant="h5"
-                    mb={3}
-                    textAlign="center"
+                    sx={{
+                        variant: "h5",
+                        mb: 3,
+                        textAlign: "center",
+                    }}
                 >
                     Вход
                 </Typography>
