@@ -14,19 +14,35 @@ import {
 function MainLayout() {
 
     return (
-        <Box>
+        <Box
+            sx={{
+                width: "100%",
+                minHeight: "100vh",
+            }}
+        >
 
-            <AppBar position="static">
+            <AppBar
+                position="static"
+                sx={{
+                    width: "100%",
+                    boxShadow: "none",
+                }}
+            >
 
                 <Toolbar
+                    disableGutters
                     sx={{
+                        px: 3,
                         display: "flex",
                         gap: 2,
+                        width: "100%",
+                        minHeight: 56,
                     }}
                 >
 
                     <Typography
-                        variant="h6"
+                        variant="h4"
+                        component="h1"
                         sx={{
                             flexGrow: 1,
                             fontWeight: 700,
@@ -36,19 +52,16 @@ function MainLayout() {
                     </Typography>
 
                     <Button
-                        color="inherit"
-                        component={Link}
-                        to="/"
-                    >
-                        Dashboard
-                    </Button>
 
-                    <Button
                         color="inherit"
                         component={Link}
                         to="/companies"
                     >
-                        Компании
+                        <Typography
+                            variant="h6"
+                        >
+                            Компании
+                        </Typography>
                     </Button>
 
                     <Button
@@ -56,7 +69,11 @@ function MainLayout() {
                         component={Link}
                         to="/profile"
                     >
-                        Профиль
+                        <Typography
+                            variant="h6"
+                        >
+                            Профиль
+                        </Typography>
                     </Button>
 
                 </Toolbar>

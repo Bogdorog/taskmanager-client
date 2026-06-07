@@ -55,9 +55,7 @@ function DashboardPage() {
 
         async function loadData() {
 
-                if (!selectedCompany) {
-                    return;
-                }
+            try {
 
                 const [
                     boardsData,
@@ -76,7 +74,12 @@ function DashboardPage() {
                 setMembersCount(
                     membersData.length
                 );
-            };
+
+            } catch (error) {
+
+                console.error(error);
+            }
+        }
 
         void loadData();
 

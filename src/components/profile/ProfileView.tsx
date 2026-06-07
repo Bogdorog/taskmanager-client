@@ -65,11 +65,12 @@ function InfoRow({
 function ProfileView({
     user,
     onEdit,
-    onChangePassword,
+    onChangePassword, onLogout,
 }: {
     user: UserDto;
     onEdit: () => void;
     onChangePassword: () => void;
+    onLogout: () => void;
 }) {
 
     return (
@@ -87,8 +88,8 @@ function ProfileView({
                 sx={{
                     p: 5,
                     background:
-                        "linear-gradient(135deg, #1976d2 0%, #1565c0 100%)",
-                    color: "white",
+                        "linear-gradient(135deg, #DFF3E3 0%, #CFE8D5 100%)",
+                    color: "#355B3D",
                 }}
             >
 
@@ -134,7 +135,7 @@ function ProfileView({
                                 py: 0.7,
                                 borderRadius: 10,
                                 backgroundColor:
-                                    "rgba(255,255,255,0.15)",
+                                    "rgba(255,255,255,0.45)",
                                 backdropFilter: "blur(8px)",
                             }}
                         >
@@ -231,6 +232,15 @@ function ProfileView({
                         }}
                     >
                         Сменить пароль
+                    </Button>
+
+                    <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={onLogout}
+                        sx={{ borderRadius: 3, textTransform: "none" }}
+                    >
+                        Выйти из аккаунта
                     </Button>
 
                 </Box>

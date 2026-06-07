@@ -31,40 +31,26 @@ export const updateProfile =
         return response.data;
     };
 
-export const uploadAvatar =
-    async (
-        file: File
-    ): Promise<UserDto> => {
+/**
+ * Загрузить/изменить аватар текущего пользователя
+ */
+export async function uploadUserAvatar(file: File): Promise<UserDto> {
+    const formData = new FormData();
+    formData.append("file", file);
 
-        const formData = new FormData();
+    const response = await api.put<UserDto>("/user/me/avatar", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+    });
+    return response.data;
+}
 
-        formData.append("file", file);
-
-        const response =
-            await api.put<UserDto>(
-                "/user/me/avatar",
-                formData,
-                {
-                    headers: {
-                        "Content-Type":
-                            "multipart/form-data",
-                    },
-                }
-            );
-
-        return response.data;
-    };
-
-export const deleteAvatar =
-    async (): Promise<UserDto> => {
-
-        const response =
-            await api.delete<UserDto>(
-                "/user/me/avatar"
-            );
-
-        return response.data;
-    };
+/**
+ * Удалить аватар текущего пользователя
+ */
+export async function deleteUserAvatar(): Promise<UserDto> {
+    const response = await api.delete<UserDto>("/user/me/avatar");
+    return response.data;
+}
 
 export const changePassword =
     async (

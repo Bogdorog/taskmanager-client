@@ -5,14 +5,10 @@ import type {
 export interface CompanyContextType {
 
     companies: CompanyDto[];
-
-    selectedCompany:
-        CompanyDto | null;
+    selectedCompany: CompanyDto | null;
 
     setSelectedCompany: (
         company: CompanyDto | null
     ) => void;
-
-    refreshCompanies:
-        () => Promise<void>;
+    refreshCompanies: () => Promise<void>;
 }

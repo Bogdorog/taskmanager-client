@@ -7,9 +7,7 @@ import {
     useAuth
 } from "@/context/AuthContext";
 
-import {
-    useCompany
-} from "@/context/CompanyContext";
+import {useCompany} from "@/hooks/useCompany";
 
 function DashboardHeader() {
 

@@ -4,9 +4,7 @@ import {
     Typography,
 } from "@mui/material";
 
-import type {
-    BoardDto
-} from "@/types/board";
+import type {BoardDto} from "@/types/board";
 
 function RecentBoards({
                           boards,

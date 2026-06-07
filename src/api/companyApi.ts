@@ -5,6 +5,9 @@ import type {
     CreateCompanyRequest,
     CompanyMembershipDto, CompanyRoleDto,
 } from "@/types/company";
+import type {
+    CompanyPermissions
+} from "@/types/company-permissions";
 
 export const getMyCompanies =
     async (): Promise<CompanyDto[]> => {
@@ -88,3 +91,88 @@ export const inviteUser =
             data
         );
     };
+
+export async function getMyPermissions(
+    companyId: number
+): Promise<CompanyPermissions> {
+
+    const response =
+        await api.get(
+            `/companies/${companyId}/permissions/me`
+        );
+
+    return response.data;
+}
+
+export interface RoleRequest {
+    companyId: number;
+    name: string;
+    description: string;
+    permissions: string[];
+}
+
+export interface AssignRoleRequest {
+    companyId: number;
+    membershipId: number;
+    roleId: number;
+}
+
+export interface TransferOwnershipRequest {
+    companyId: number;
+    newOwnerUserId: number;
+    newOwnerRoleId: number;
+}
+
+export async function createRole(
+    companyId: number,
+    request: RoleRequest
+): Promise<void> {
+
+    await api.post(
+        `/companies/${companyId}/roles`,
+        request
+    );
+}
+
+export async function assignRole(
+    companyId: number,
+    membershipId: number,
+    roleId: number
+): Promise<void> {
+
+    await api.put(
+        `/companies/${companyId}/members/${membershipId}/role`,
+        {
+            roleId,
+        }
+    );
+}
+
+export async function transferOwnership(
+    companyId: number,
+    request: TransferOwnershipRequest
+): Promise<void> {
+
+    await api.put(
+        `/companies/${companyId}/transfer-owner/${request.newOwnerUserId}`,
+        request
+    );
+}
+
+export async function updateCompany(companyId: number, data: CreateCompanyRequest): Promise<CompanyDto> {
+    const response = await api.put<CompanyDto>(`/companies/${companyId}`, data);
+    return response.data;
+}
+
+export async function deleteCompany(companyId: number): Promise<void> {
+    await api.delete(`/companies/${companyId}`, { data: { companyId } });
+}
+
+export async function leaveCompany(
+    companyId: number
+): Promise<void> {
+
+    await api.delete(
+        `/companies/${companyId}/leave`
+    );
+}

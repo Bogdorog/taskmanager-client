@@ -5,14 +5,17 @@ import {
     Typography,
 } from "@mui/material";
 
-import {
-    useNavigate
-} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
+import {useCompany} from "@/hooks/useCompany";
 
 function QuickActions() {
 
     const navigate =
         useNavigate();
+
+    const {
+        selectedCompany
+    } = useCompany();
 
     return (
         <Paper
@@ -43,9 +46,17 @@ function QuickActions() {
 
                 <Button
                     variant="contained"
-                    onClick={() =>
-                        navigate("/boards")
-                    }
+                    disabled={!selectedCompany}
+                    onClick={() => {
+
+                        if (!selectedCompany) {
+                            return;
+                        }
+
+                        navigate(
+                            `/companies/${selectedCompany.id}/boards`
+                        );
+                    }}
                 >
                     Доски
                 </Button>

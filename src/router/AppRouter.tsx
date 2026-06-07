@@ -10,9 +10,6 @@ import MainLayout
 import ProtectedRoute
     from "@/router/ProtectedRoute";
 
-import HomePage
-    from "@/pages/HomePage";
-
 import LoginPage
     from "@/pages/LoginPage";
 
@@ -31,43 +28,37 @@ import CreateCompanyPage
 import CompanyPage
     from "@/pages/CompanyPage";
 
-import DashboardPage
-    from "@/pages/DashboardPage";
+import BoardsPage
+    from "@/pages/BoardsPage";
 
-import {
-    CompanyProvider
-} from "@/context/CompanyContext";
+import BoardPage
+    from "@/pages/BoardPage";
+
+import CompanyProvider from "@/context/CompanyContext"
+import CompanyMembersPage from "@/pages/CompanyMembersPage.tsx";
+import CompanyRolesPage from "@/pages/CompanyRolesPage.tsx";
+import CompanyProfilePage from "@/pages/CompanyProfilePage.tsx";
+import HomePage from "@/pages/HomePage.tsx";
+import PasswordResetPage from "@/pages/PasswordResetPage.tsx";
+import PasswordResetConfirmPage from "@/pages/PasswordResetConfirmPage.tsx";
+import EditCompanyPage from "@/pages/EditCompanyPage.tsx";
+import DeleteCompanyPage from "@/pages/DeleteCompanyPage.tsx";
 
 function AppRouter() {
 
     return (
         <BrowserRouter>
-
             <CompanyProvider>
-
                 <Routes>
 
                     <Route
                         element={<MainLayout />}
                     >
-
                         <Route
                             path="/"
-                            element={
-                                <ProtectedRoute>
-                                    <DashboardPage />
-                                </ProtectedRoute>
-                            }
+                            element={<HomePage />}
                         />
 
-                        <Route
-                            path="/home"
-                            element={
-                                <ProtectedRoute>
-                                    <HomePage />
-                                </ProtectedRoute>
-                            }
-                        />
 
                         <Route
                             path="/login"
@@ -77,6 +68,20 @@ function AppRouter() {
                         <Route
                             path="/register"
                             element={<RegisterPage />}
+                        />
+
+                        <Route
+                            path="/password-reset"
+                            element={
+                                <PasswordResetPage />
+                            }
+                        />
+
+                        <Route
+                            path="/password-reset/confirm"
+                            element={
+                                <PasswordResetConfirmPage />
+                            }
                         />
 
                         <Route
@@ -115,12 +120,59 @@ function AppRouter() {
                             }
                         />
 
+                        <Route
+                            path="/companies/:id/boards"
+                            element={
+                                <ProtectedRoute>
+                                    <BoardsPage />
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        <Route
+                            path="/companies/:id/boards/:boardId"
+                            element={
+                                <ProtectedRoute>
+                                    <BoardPage />
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        <Route
+                            path="/companies/:id/members"
+                            element={
+                                <ProtectedRoute>
+                                    <CompanyMembersPage />
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        <Route
+                            path="/companies/:id/roles"
+                            element={
+                                <ProtectedRoute>
+                                    <CompanyRolesPage />
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        <Route
+                            path="/companies/:id/profile"
+                            element={
+                                <ProtectedRoute>
+                                    <CompanyProfilePage />
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        <Route path="/companies/:id" element={<CompanyPage />} />
+                        <Route path="/companies/:id/profile" element={<CompanyProfilePage />} />
+                        <Route path="/companies/:id/edit" element={<EditCompanyPage />} />
+                        <Route path="/companies/:id/delete" element={<DeleteCompanyPage />} />
+
                     </Route>
-
                 </Routes>
-
             </CompanyProvider>
-
         </BrowserRouter>
     );
 }

@@ -1,122 +1,52 @@
-import {
-    Box,
-    CircularProgress,
-} from "@mui/material";
+import { useState } from "react";
+import { Box, CircularProgress, Alert } from "@mui/material";
+import { useProfile } from "@/hooks/useProfile";
 
-import { useEffect, useState }
-    from "react";
-
-import {
-    getCurrentUser
-} from "@/api/userApi";
-
-import type {
-    UserDto
-} from "@/types/user";
-
-import ProfileView
-    from "@/components/profile/ProfileView";
-
-import ProfileEditForm
-    from "@/components/profile/ProfileEditForm";
-
-import ChangePasswordDialog
-    from "@/components/profile/ChangePasswordDialog";
+import ProfileView from "@/components/profile/ProfileView";
+import ProfileEditForm from "@/components/profile/ProfileEditForm";
+import ChangePasswordDialog from "@/components/profile/ChangePasswordDialog";
+import BackButton from "@/components/utils/BackButton.tsx";
 
 function ProfilePage() {
+    const { user, isLoading, error, logout } = useProfile();
+    const [editMode, setEditMode] = useState(false);
+    const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
 
-    const [user,
-        setUser] =
-        useState<UserDto | null>(null);
-
-    const [loading,
-        setLoading] =
-        useState(true);
-
-    const [editMode,
-        setEditMode] =
-        useState(false);
-
-    const [passwordDialogOpen,
-        setPasswordDialogOpen] =
-        useState(false);
-
-    const loadUser = async () => {
-
-        try {
-
-            const data =
-                await getCurrentUser();
-
-            setUser(data);
-
-        } finally {
-
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-
-        loadUser();
-
-    }, []);
-
-    if (loading || !user) {
-
+    if (isLoading) {
         return (
-            <CircularProgress />
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    if (error || !user) {
+        return (
+            <Box sx={{ p: 5 }}><Alert severity="error">Ошибка загрузки профиля</Alert></Box>
         );
     }
 
     return (
-        <Box
-            sx={{
-                display: "flex",
-                justifyContent: "center",
-            }}
-        >
+        <Box sx={{ display: "flex", justifyContent: "center", position: "relative", pt: 6 }}>
+            <Box sx={{ position: "absolute", left: 0, top: 0 }}>
+                <BackButton />
+            </Box>
 
             {editMode ? (
-
-                <ProfileEditForm
-                    user={user}
-                    onCancel={() =>
-                        setEditMode(false)
-                    }
-                    onSave={(updated) => {
-
-                        setUser(updated);
-
-                        setEditMode(false);
-                    }}
-                />
-
+                <ProfileEditForm onCancel={() => setEditMode(false)} />
             ) : (
-
                 <ProfileView
                     user={user}
-                    onEdit={() =>
-                        setEditMode(true)
-                    }
-                    onChangePassword={() =>
-                        setPasswordDialogOpen(
-                            true
-                        )
-                    }
+                    onEdit={() => setEditMode(true)}
+                    onChangePassword={() => setPasswordDialogOpen(true)}
+                    onLogout={logout}
                 />
-
             )}
 
             <ChangePasswordDialog
                 open={passwordDialogOpen}
-                onClose={() =>
-                    setPasswordDialogOpen(
-                        false
-                    )
-                }
+                onClose={() => setPasswordDialogOpen(false)}
             />
-
         </Box>
     );
 }
