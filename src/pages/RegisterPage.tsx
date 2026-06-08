@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, Box, Button, Paper, TextField, Typography, CircularProgress, Divider, Grid } from "@mui/material";
 import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
-
 import { register } from "@/api/authApi";
 import { getApiErrorMessage } from "@/utils/apiError";
 
@@ -25,63 +24,89 @@ function RegisterPage() {
         password: "",
     });
 
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [loading, setLoading] = useState(false);
 
+    const validateField = (name: string, value: string) => {
+        let errorMsg = "";
+
+        if (name === "login" && value.trim()) {
+            if (/[А-Яа-яЁё]/.test(value)) {
+                errorMsg = "Логин не должен содержать кириллицу";
+            } else if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+                errorMsg = "Разрешены только латиница, цифры, дефис и подчёркивание";
+            }
+        }
+
+        if (["lastName", "firstName", "middleName"].includes(name) && value.trim()) {
+            if (/[^А-Яа-яЁё\s-]/.test(value)) {
+                errorMsg = "Разрешены только русские буквы, пробелы и дефисы";
+            }
+        }
+
+        if (name === "email" && value.trim()) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+                errorMsg = "Некорректный формат Email";
+            }
+        }
+
+        if (name === "phone" && value.trim()) {
+            const digitsCount = value.replace(/\D/g, "").length;
+            if (digitsCount !== 11) {
+                errorMsg = "Номер телефона должен содержать ровно 11 цифр";
+            }
+        }
+
+        setFieldErrors((prev) => ({
+            ...prev,
+            [name]: errorMsg,
+        }));
+    };
+
     function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
         const { name, value } = e.target;
-        if (error) setError(""); // Чистим ошибку при любом изменении
+        if (error) setError("");
 
-        // Фильтрация кириллицы для ФИО
-        if (["lastName", "firstName", "middleName"].includes(name)) {
-            const filtered = value.replace(/[^А-Яа-яЁё\s-]/g, "");
-            setFormData((prev) => ({ ...prev, [name]: filtered }));
-            return;
-        }
-
-        // Фильтрация логина (только латиница и цифры)
-        if (name === "login") {
-            const filtered = value.replace(/[^a-zA-Z0-9]/g, "");
-            setFormData((prev) => ({ ...prev, login: filtered }));
-            return;
-        }
-
-        // Форматирование телефона
         if (name === "phone") {
             const digits = value.replace(/\D/g, "").slice(0, 11);
             let formatted = digits;
 
-            if (digits.length > 1) formatted = `${digits[0]}-(${digits.slice(1, 4)}`;
-            if (digits.length >= 4) formatted = `${digits[0]}-(${digits.slice(1, 4)})`;
-            if (digits.length >= 7) formatted += `-${digits.slice(4, 7)}`;
-            if (digits.length >= 9) formatted += `-${digits.slice(7, 9)}`;
-            if (digits.length >= 11) formatted += `-${digits.slice(9, 11)}`;
+            if (digits.length > 0) {
+                if (digits.length <= 1) {
+                    formatted = digits;
+                } else if (digits.length <= 4) {
+                    formatted = `${digits[0]}-(${digits.slice(1)}`;
+                } else if (digits.length <= 7) {
+                    formatted = `${digits[0]}-(${digits.slice(1, 4)})-${digits.slice(4)}`;
+                } else if (digits.length <= 9) {
+                    formatted = `${digits[0]}-(${digits.slice(1, 4)})-${digits.slice(4, 7)}-${digits.slice(7)}`;
+                } else {
+                    formatted = `${digits[0]}-(${digits.slice(1, 4)})-${digits.slice(4, 7)}-${digits.slice(7, 9)}-${digits.slice(9, 11)}`;
+                }
+            }
 
             setFormData((prev) => ({ ...prev, phone: formatted }));
+            validateField(name, formatted);
             return;
         }
 
         setFormData((prev) => ({ ...prev, [name]: value }));
+        // Запускаем валидацию для измененного поля
+        validateField(name, value);
     }
 
-    function validate() {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isFormInvalid = Object.values(fieldErrors).some((msg) => msg !== "") ||
+        !formData.login.trim() ||
+        !formData.password.trim() ||
+        !formData.lastName.trim() ||
+        !formData.firstName.trim();
 
-        if (!formData.login.trim() || !formData.password.trim()) {
-            setError("Заполните логин и пароль учетной записи");
-            return false;
-        }
-        if (!formData.lastName.trim() || !formData.firstName.trim()) {
-            setError("Введите фамилию и имя");
-            return false;
-        }
-        if (!emailRegex.test(formData.email)) {
-            setError("Введите корректный Email");
-            return false;
-        }
-        if (formData.phone.replace(/\D/g, "").length !== 11) {
-            setError("Введите корректный номер телефона (11 цифр)");
+    function validateOnSubmit() {
+        if (isFormInvalid) {
+            setError("Пожалуйста, исправьте ошибки в полях и заполните обязательные данные");
             return false;
         }
         return true;
@@ -92,7 +117,7 @@ function RegisterPage() {
         setError("");
         setSuccess("");
 
-        if (!validate()) return;
+        if (!validateOnSubmit()) return;
 
         try {
             setLoading(true);
@@ -112,10 +137,12 @@ function RegisterPage() {
                 .filter(Boolean)
                 .join(", ");
 
+            const cleanPhone = formData.phone.replace(/\D/g, "");
+
             await register({
                 login: formData.login,
                 fullName,
-                phone: formData.phone,
+                phone: cleanPhone,
                 email: formData.email,
                 address,
                 password: formData.password,
@@ -146,7 +173,7 @@ function RegisterPage() {
                 elevation={4}
                 sx={{
                     width: "100%",
-                    maxWidth: 750, // Сделали чуть уже, чтобы поля не растягивались слишком сильно
+                    maxWidth: 750,
                     p: { xs: 3, sm: 5 },
                     borderRadius: 3,
                     display: "flex",
@@ -182,7 +209,16 @@ function RegisterPage() {
                             <Divider sx={{ mt: 0.5 }} />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField fullWidth label="Логин" name="login" value={formData.login} onChange={handleChange} disabled={loading} />
+                            <TextField
+                                fullWidth
+                                label="Логин"
+                                name="login"
+                                value={formData.login}
+                                onChange={handleChange}
+                                disabled={loading}
+                                error={!!fieldErrors.login}
+                                helperText={fieldErrors.login}
+                            />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField fullWidth type="password" label="Пароль" name="password" value={formData.password} onChange={handleChange} disabled={loading} />
@@ -196,19 +232,66 @@ function RegisterPage() {
                             <Divider sx={{ mt: 0.5 }} />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 4 }}>
-                            <TextField fullWidth label="Фамилия" name="lastName" value={formData.lastName} onChange={handleChange} disabled={loading} />
+                            <TextField
+                                fullWidth
+                                label="Фамилия"
+                                name="lastName"
+                                value={formData.lastName}
+                                onChange={handleChange}
+                                disabled={loading}
+                                error={!!fieldErrors.lastName}
+                                helperText={fieldErrors.lastName}
+                            />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 4 }}>
-                            <TextField fullWidth label="Имя" name="firstName" value={formData.firstName} onChange={handleChange} disabled={loading} />
+                            <TextField
+                                fullWidth
+                                label="Имя"
+                                name="firstName"
+                                value={formData.firstName}
+                                onChange={handleChange}
+                                disabled={loading}
+                                error={!!fieldErrors.firstName}
+                                helperText={fieldErrors.firstName}
+                            />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 4 }}>
-                            <TextField fullWidth label="Отчество (необязательно)" name="middleName" value={formData.middleName} onChange={handleChange} disabled={loading} />
+                            <TextField
+                                fullWidth
+                                label="Отчество"
+                                name="middleName"
+                                value={formData.middleName}
+                                onChange={handleChange}
+                                disabled={loading}
+                                error={!!fieldErrors.middleName}
+                                helperText={fieldErrors.middleName}
+                            />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField fullWidth label="Телефон" name="phone" placeholder="7-(999)-999-99-99" value={formData.phone} onChange={handleChange} disabled={loading} />
+                            <TextField
+                                fullWidth
+                                label="Телефон"
+                                name="phone"
+                                placeholder="7-(999)-999-99-99"
+                                value={formData.phone}
+                                onChange={handleChange}
+                                disabled={loading}
+                                error={!!fieldErrors.phone}
+                                helperText={fieldErrors.phone}
+                            />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField fullWidth type="email" label="Email" name="email" value={formData.email} onChange={handleChange} disabled={loading} />
+                            <TextField
+                                fullWidth
+                                type="email"
+                                label="Email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                disabled={loading}
+                                error={!!fieldErrors.email}
+                                helperText={fieldErrors.email}
+                            />
                         </Grid>
 
                         {/* Секция 3: Адрес */}
@@ -247,7 +330,7 @@ function RegisterPage() {
                         variant="contained"
                         size="large"
                         sx={{ mt: 4, height: 48, borderRadius: 2, fontSize: "1rem" }}
-                        disabled={loading || !!success}
+                        disabled={loading || !!success || isFormInvalid}
                     >
                         {loading ? <CircularProgress size={24} color="inherit" /> : "Зарегистрироваться"}
                     </Button>

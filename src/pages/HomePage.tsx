@@ -5,7 +5,6 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import SecurityIcon from "@mui/icons-material/Security";
 
 function HomePage() {
-    // Общие стили для кнопок, чтобы не дублировать код
     const buttonStyles = {
         px: { xs: 4, sm: 5 },
         py: 1.5,
@@ -21,7 +20,7 @@ function HomePage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                py: { xs: 4, md: 8 }, // Добавили py, чтобы контент не прилипал на мелких экранах при переполнении
+                py: { xs: 4, md: 8 },
                 px: 2,
                 bgcolor: "background.default",
             }}
@@ -96,8 +95,6 @@ function HomePage() {
                             Регистрация
                         </Button>
                     </Box>
-
-                    {/* Заголовок теперь семантически правильный и находится НАД сеткой фичей */}
                     <Typography
                         variant="h5"
                         component="h2"
@@ -110,8 +107,6 @@ function HomePage() {
                     >
                         Возможности платформы
                     </Typography>
-
-                    {/* Используем полноценный MUI Grid для гарантированной адаптивности */}
                     <Grid container spacing={3}>
                         <Grid size={{ xs: 12, sm: 4 }}>
                             <Paper
@@ -133,7 +128,7 @@ function HomePage() {
                                     Компании
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
-                                    Создание изолированных компаний и удобное управление составом участников.
+                                    Создание компаний с настраиваемой структурой и удобное управление составом участников.
                                 </Typography>
                             </Paper>
                         </Grid>
@@ -158,7 +153,7 @@ function HomePage() {
                                     Канбан-доски
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
-                                    Визуальное распределение задач по этапам, колонкам и спринтам.
+                                    Визуальное распределение задач по этапам, колонкам и приоритетам.
                                 </Typography>
                             </Paper>
                         </Grid>

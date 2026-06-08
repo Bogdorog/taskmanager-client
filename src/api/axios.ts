@@ -8,17 +8,15 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-
-    const token = localStorage.getItem(
-        "accessToken"
-    );
-
-    if (token) {
-
-        config.headers.Authorization =
-            `Bearer ${token}`;
+    // Список публичных URL, где токен не нужен
+    const publicUrls = ["/auth"];
+    if (config.url && publicUrls.includes(config.url)) {
+        return config;
     }
-
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
 });
 
