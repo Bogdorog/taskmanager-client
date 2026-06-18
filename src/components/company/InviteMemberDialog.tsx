@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, TextField, Alert, CircularProgress } from "@mui/material";
-
 import { inviteUser } from "@/api/companyApi";
 import { getApiErrorMessage } from "@/utils/apiError";
 import type { CompanyRoleDto } from "@/types/company";
@@ -8,19 +7,19 @@ import type { CompanyRoleDto } from "@/types/company";
 interface InviteMemberDialogProps {
     open: boolean;
     onClose: () => void;
-    onSuccess: () => Promise<void>; // Изменение: коллбек обновления списка
+    onSuccess: () => Promise<void>;
     companyId: number;
     roles: CompanyRoleDto[];
 }
 
 function InviteMemberDialog({ open, onClose, onSuccess, companyId, roles }: InviteMemberDialogProps) {
-    const [userId, setUserId] = useState("");
+    const [login, setLogin] = useState(""); // Изменено: стейт под логин
     const [roleId, setRoleId] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
     const handleInvite = async () => {
-        if (!userId || !roleId) {
+        if (!login.trim() || !roleId) {
             setError("Пожалуйста, заполните все поля");
             return;
         }
@@ -30,15 +29,14 @@ function InviteMemberDialog({ open, onClose, onSuccess, companyId, roles }: Invi
             setError("");
 
             await inviteUser(companyId, {
-                userId: Number(userId),
+                user: login.trim(),
                 roleId: Number(roleId),
             });
 
             // Сбрасываем форму
-            setUserId("");
+            setLogin("");
             setRoleId("");
 
-            // Запускаем реактивное обновление списка в родителе
             await onSuccess();
             onClose();
         } catch (error: unknown) {
@@ -50,13 +48,13 @@ function InviteMemberDialog({ open, onClose, onSuccess, companyId, roles }: Invi
 
     const handleCancel = () => {
         setError("");
-        setUserId("");
+        setLogin("");
         setRoleId("");
         onClose();
     };
 
     return (
-        <Dialog open={open} onClose={handleCancel} fullWidth maxWidth="xs" PaperProps={{ sx: { borderRadius: 3 } }}>
+        <Dialog open={open} onClose={handleCancel} fullWidth maxWidth="xs">
             <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Пригласить участника</DialogTitle>
 
             <DialogContent>
@@ -64,13 +62,12 @@ function InviteMemberDialog({ open, onClose, onSuccess, companyId, roles }: Invi
 
                 <TextField
                     fullWidth
-                    label="ID пользователя"
+                    label="Логин пользователя"
                     margin="normal"
-                    placeholder="Например: 12"
-                    value={userId}
-                    onChange={(e) => setUserId(e.target.value)}
+                    placeholder="Введите логин (например: ivan_dev)"
+                    value={login}
+                    onChange={(e) => setLogin(e.target.value)}
                     disabled={loading}
-                    slotProps={{ htmlInput: { inputMode: "numeric", pattern: "[0-9]*" } }} // Оптимизация под ввод цифр
                 />
 
                 <TextField
@@ -98,7 +95,7 @@ function InviteMemberDialog({ open, onClose, onSuccess, companyId, roles }: Invi
                 <Button
                     variant="contained"
                     onClick={handleInvite}
-                    disabled={loading || !userId || !roleId}
+                    disabled={loading || !login.trim() || !roleId}
                     sx={{ textTransform: "none", borderRadius: 2, minWidth: 110, height: 36 }}
                 >
                     {loading ? <CircularProgress size={20} color="inherit" /> : "Пригласить"}

@@ -1,29 +1,17 @@
 export interface CompanyPermissions {
 
     canCreateTasks: boolean;
-
     canUpdateTasks: boolean;
-
     canDeleteTasks: boolean;
-
     canAssignTasks: boolean;
-
     canViewTasks: boolean;
-
     canViewAllTasks: boolean;
-
     canInviteUsers: boolean;
-
     canViewMembers: boolean;
-
     canManageMembers: boolean;
-
     canViewRoles: boolean;
-
     canManageRoles: boolean;
-
     canManageCompany: boolean;
-
     canManageBoards: boolean;
 }
 

@@ -73,11 +73,11 @@ function CompanyPage() {
                     <Paper elevation={0} sx={{ p: 2, borderRadius: 3, border: "1px solid", borderColor: "divider", display: "flex", flexDirection: "column", gap: 1 }}>
                         <Button
                             fullWidth
-                            variant="contained"
+                            variant="text"
                             disableElevation
                             startIcon={<DashboardIcon />}
                             onClick={() => navigate(basePath("boards"))}
-                            sx={{ justifyContent: "flex-start", py: 1.2, borderRadius: 2, textTransform: "none", fontWeight: 600 }}
+                            sx={{ justifyContent: "flex-start", py: 1.2, borderRadius: 2, textTransform: "none", color: "text.primary", "&:hover": { bgcolor: "action.hover" } }}
                         >
                             Доски
                         </Button>

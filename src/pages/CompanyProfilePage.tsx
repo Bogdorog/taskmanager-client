@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Box, Button, Paper, Typography, CircularProgress, Alert, Stack, Divider, Grid } from "@mui/material";
 import BusinessIcon from "@mui/icons-material/Business";
@@ -7,14 +7,13 @@ import PhoneIcon from "@mui/icons-material/Phone";
 import PlaceIcon from "@mui/icons-material/Place";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import {getCompany, getCompanyMembers, getCompanyRoles, getMyPermissions} from "@/api/companyApi";
-import type {CompanyDto, CompanyMembershipDto, CompanyRoleDto} from "@/types/company";
-import type { CompanyPermissions } from "@/types/company-permissions";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
+import { ArrowBack } from "@mui/icons-material";
+import { useCompanyProfile } from "@/hooks/useCompanyProfile";
 import TransferOwnershipDialog from "@/components/company/TransferOwnershipDialog.tsx";
-import {getApiErrorMessage} from "@/utils/apiError.ts";
-import BackButton from "@/components/utils/BackButton.tsx";
+import { getApiErrorMessage } from "@/utils/apiError.ts";
 
 interface InfoRowProps {
     icon: React.ReactNode;
@@ -26,7 +25,7 @@ const InfoRow = ({ icon, label, value }: InfoRowProps) => (
     <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2, py: 1.5 }}>
         <Box sx={{ color: "primary.main", display: "flex", mt: 0.3 }}>{icon}</Box>
         <Box>
-            <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 500 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 500, textAlign: "left" }}>
                 {label}
             </Typography>
             <Typography variant="body1" sx={{ fontWeight: 600, color: "text.primary" }}>
@@ -42,68 +41,20 @@ const InfoRow = ({ icon, label, value }: InfoRowProps) => (
 
 function CompanyProfilePage() {
     const { id } = useParams<{ id: string }>();
+    const companyId = Number(id);
     const navigate = useNavigate();
-
-    const [company, setCompany] = useState<CompanyDto | null>(null);
-    const [permissions, setPermissions] = useState<CompanyPermissions | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
     const [transferOpen, setTransferOpen] = useState(false);
-    const [members, setMembers] = useState<CompanyMembershipDto[]>([]);
-    const [roles, setRoles] = useState<CompanyRoleDto[]>([]);
+    const { company, permissions, members, roles, isLoading, error } = useCompanyProfile(companyId);
 
-    useEffect(() => {
-        let isMounted = true;
+    if (isNaN(companyId) || companyId <= 0) {
+        return (
+            <Box sx={{ p: 3 }}>
+                <Alert severity="error" sx={{ borderRadius: 2 }}>Некорректный идентификатор компании</Alert>
+            </Box>
+        );
+    }
 
-        async function load() {
-            if (!id || isNaN(Number(id))) {
-                setError("Некорректный идентификатор компании");
-                setLoading(false);
-                return;
-            }
-
-            try {
-                setLoading(true);
-                setError("");
-                const companyId = Number(id);
-
-                const [companyData, perms] = await Promise.all([
-                    getCompany(companyId),
-                    getMyPermissions(companyId),
-                ]);
-
-                if (isMounted) {
-                    setCompany(companyData);
-                    setPermissions(perms);
-                }
-
-                if (perms.canManageCompany === true)
-                {
-                    const [membersData, rolesData] = await Promise.all([
-                        getCompanyMembers(companyId),
-                        getCompanyRoles(companyId)
-                    ]);
-                    setMembers(membersData);
-                    setRoles(rolesData);
-                }
-            } catch (error) {
-                if (isMounted) {
-                    setError("Не удалось загрузить профиль компании.");
-                    setError(getApiErrorMessage(error));
-                }
-            } finally {
-                if (isMounted) setLoading(false);
-            }
-        }
-
-        void load();
-
-        return () => {
-            isMounted = false;
-        };
-    }, [id]);
-
-    if (loading) {
+    if (isLoading) {
         return (
             <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
                 <CircularProgress />
@@ -114,7 +65,9 @@ function CompanyProfilePage() {
     if (error || !company || !permissions) {
         return (
             <Box sx={{ p: { xs: 3, md: 5 } }}>
-                <Alert severity="error" sx={{ borderRadius: 2, mb: 3 }}>{error || "Данные недоступны"}</Alert>
+                <Alert severity="error" sx={{ borderRadius: 2, mb: 3 }}>
+                    {error ? getApiErrorMessage(error) : "Данные недоступны"}
+                </Alert>
                 <Button startIcon={<ArrowBackIcon />} onClick={() => navigate(`/companies/${id}`)}>
                     Назад в компанию
                 </Button>
@@ -125,7 +78,12 @@ function CompanyProfilePage() {
     return (
         <Box sx={{ p: { xs: 3, md: 5 }, bgcolor: "background.default", minHeight: "100vh" }}>
             <Box sx={{ display: "flex", justifyContent: "flex-start", alignItems: "flex-start", columnGap: 30, mt: 2, pt: 3, mb: 4 }}>
-                <BackButton />
+                <Button
+                    startIcon={<ArrowBack />}
+                    onClick={() => navigate(`/companies/${company.id}`)}
+                >
+                    Назад
+                </Button>
                 <Typography variant="h4" component="h1" sx={{ fontWeight: 800, mb: 4, color: "text.primary" }}>
                     Профиль компании
                 </Typography>
@@ -141,6 +99,8 @@ function CompanyProfilePage() {
 
                         <Stack spacing={0.5}>
                             <InfoRow icon={<BusinessIcon />} label="Название организации" value={company.name} />
+                            <Divider component="div" />
+                            <InfoRow icon={<ArticleOutlinedIcon />} label="Описание организации" value={company.description} />
                             <Divider component="div" />
                             <InfoRow icon={<EmailIcon />} label="Контактный Email" value={company.email} />
                             <Divider component="div" />
@@ -197,10 +157,11 @@ function CompanyProfilePage() {
                     </Paper>
                 </Grid>
             </Grid>
+
             <TransferOwnershipDialog
                 open={transferOpen}
                 onClose={() => setTransferOpen(false)}
-                companyId={Number(id)}
+                companyId={companyId}
                 members={members}
                 roles={roles}
             />

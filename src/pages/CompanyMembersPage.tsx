@@ -1,55 +1,39 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Box, Button, Typography, CircularProgress, Alert } from "@mui/material";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 
-import { getCompanyMembers, getCompanyRoles, getMyPermissions } from "@/api/companyApi";
-import type { CompanyMembershipDto, CompanyRoleDto } from "@/types/company";
-import type { CompanyPermissions } from "@/types/company-permissions";
+import { useCompanyMembersData } from "@/hooks/useCompanyMembersData";
+import { getApiErrorMessage } from "@/utils/apiError.ts";
 
 import CompanyMembers from "@/components/company/CompanyMembers";
 import InviteMemberDialog from "@/components/company/InviteMemberDialog";
 import BackButton from "@/components/utils/BackButton.tsx";
-import {getApiErrorMessage} from "@/utils/apiError.ts";
 
 function CompanyMembersPage() {
     const { id } = useParams<{ id: string }>();
     const companyId = Number(id);
-    const [members, setMembers] = useState<CompanyMembershipDto[]>([]);
-    const [roles, setRoles] = useState<CompanyRoleDto[]>([]);
-    const [permissions, setPermissions] = useState<CompanyPermissions | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
     const [inviteOpen, setInviteOpen] = useState(false);
-    const loadData = useCallback(async () => {
-        if (!id || isNaN(companyId)) return;
+    const {
+        permissions,
+        members,
+        roles,
+        isLoading,
+        error,
+        refetchAll
+    } = useCompanyMembersData(companyId);
 
-        try {
-            setError("");
-            const perms = await getMyPermissions(companyId);
-            setPermissions(perms);
+    if (isNaN(companyId) || companyId <= 0) {
+        return (
+            <Box sx={{ p: 5 }}>
+                <Alert severity="error" sx={{ borderRadius: 2 }}>
+                    Некорректный идентификатор компании
+                </Alert>
+            </Box>
+        );
+    }
 
-            if (perms.canViewMembers) {
-                const [membersData, rolesData] = await Promise.all([
-                    getCompanyMembers(companyId),
-                    getCompanyRoles(companyId),
-                ]);
-                setMembers(membersData);
-                setRoles(rolesData);
-            }
-        } catch (err: unknown) {
-            setError("Не удалось загрузить данные сотрудников компании.");
-            setError(getApiErrorMessage(err));
-        } finally {
-            setLoading(false);
-        }
-    }, [id, companyId]);
-
-    useEffect(() => {
-        void loadData();
-    }, [loadData]);
-
-    if (loading) {
+    if (isLoading) {
         return (
             <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
                 <CircularProgress />
@@ -59,14 +43,24 @@ function CompanyMembersPage() {
 
     if (error) {
         return (
-            <Box sx={{ p: 5 }}><Alert severity="error" sx={{ borderRadius: 2 }}>{error}</Alert></Box>
+            <Box sx={{ p: 5 }}>
+                <Alert severity="error" sx={{ borderRadius: 2 }}>
+                    {getApiErrorMessage(error)}
+                </Alert>
+            </Box>
         );
     }
 
+    // Если данные загрузились, но у пользователя нет прав на просмотр
     if (!permissions || !permissions.canViewMembers) {
         return (
             <Box sx={{ p: 5 }}>
-                <Alert severity="warning" sx={{ borderRadius: 2 }}>У вас нет прав для просмотра сотрудников.</Alert>
+                <Box sx={{ display: "flex", mb: 2 }}>
+                    <BackButton />
+                </Box>
+                <Alert severity="warning" sx={{ borderRadius: 2 }}>
+                    У вас нет прав для просмотра сотрудников.
+                </Alert>
             </Box>
         );
     }
@@ -91,13 +85,17 @@ function CompanyMembersPage() {
                     </Button>
                 )}
             </Box>
-
-            <CompanyMembers members={members} />
-
+            <CompanyMembers
+                members={members}
+                companyId={companyId}
+                roles={roles}
+                permissions={permissions}
+                onUpdate={refetchAll}
+            />
             <InviteMemberDialog
                 open={inviteOpen}
                 onClose={() => setInviteOpen(false)}
-                onSuccess={loadData}
+                onSuccess={refetchAll}
                 companyId={companyId}
                 roles={roles}
             />

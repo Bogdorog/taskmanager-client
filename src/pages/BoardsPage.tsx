@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Button, Card, Typography, Grid, CircularProgress, Alert, CardActionArea, Stack, Paper } from "@mui/material";
 import DashboardCustomizeIcon from "@mui/icons-material/DashboardCustomize";
@@ -6,47 +6,27 @@ import ViewKanbanIcon from "@mui/icons-material/ViewKanban";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
 import { useCompany } from "@/hooks/useCompany";
-import type { BoardDto } from "@/types/board";
-import { getBoards } from "@/api/boardApi";
-import { getApiErrorMessage } from "@/utils/apiError";
-
+import { useCompanyBoards } from "@/hooks/useCompanyBoards"; // Наш новый хук
 import CreateBoardDialog from "@/components/board/CreateBoardDialog";
 import BackButton from "@/components/utils/BackButton.tsx";
 
 function BoardsPage() {
     const navigate = useNavigate();
     const { selectedCompany } = useCompany();
-
-    const [boards, setBoards] = useState<BoardDto[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
     const [createOpen, setCreateOpen] = useState(false);
 
-    const loadBoards = useCallback(async () => {
-        if (!selectedCompany?.id) return;
-        try {
-            setError("");
-            const data = await getBoards(selectedCompany.id);
-            setBoards(data);
-        } catch (err: unknown) {
-            setError(getApiErrorMessage(err));
-        } finally {
-            setLoading(false);
-        }
-    }, [selectedCompany?.id]);
-
-    useEffect(() => {
-        if (selectedCompany?.id) {
-            void loadBoards();
-        }
-    }, [selectedCompany, loadBoards]);
+    const {
+        data: boards = [],
+        isLoading,
+        error,
+        refetch
+    } = useCompanyBoards(selectedCompany?.id);
 
     const handleCreateBoard = async () => {
-        setLoading(true);
-        await loadBoards();
+        await refetch();
     };
 
-    if (loading) {
+    if (isLoading) {
         return (
             <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
                 <CircularProgress />
@@ -82,7 +62,8 @@ function BoardsPage() {
                 </Button>
             </Stack>
 
-            {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
+            {/* Выводим ошибку, если она пришла из React Query */}
+            {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error.message}</Alert>}
 
             {boards.length === 0 ? (
                 <Paper elevation={0} sx={{ p: 6, textAlign: "center", borderRadius: 4, border: "1px dashed", borderColor: "divider", bgcolor: "rgba(0,0,0,0.01)" }}>

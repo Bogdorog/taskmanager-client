@@ -10,7 +10,7 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
     // Список публичных URL, где токен не нужен
     const publicUrls = ["/auth"];
-    if (config.url && publicUrls.includes(config.url)) {
+    if (config.url && publicUrls.some(publicUrl => config.url?.startsWith(publicUrl))) {
         return config;
     }
     const token = localStorage.getItem("accessToken");

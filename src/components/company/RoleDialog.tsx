@@ -1,24 +1,46 @@
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Grid, TextField, Alert, CircularProgress, Typography, Box } from "@mui/material";
 
 import { COMPANY_PERMISSIONS } from "@/types/company-permissions.ts";
-import { createRole } from "@/api/companyApi.ts";
+import { createRole, updateRole } from "@/api/companyApi.ts";
 import { PERMISSION_TRANSLATIONS } from "@/utils/permissionTranslator";
 import { getApiErrorMessage } from "@/utils/apiError";
+import type {CompanyRoleDto} from "@/types/company.ts";
 
 interface Props {
     open: boolean;
     onClose: () => void;
     companyId: number;
+    role: CompanyRoleDto | null;
     onSuccess: () => Promise<void>;
 }
 
-function CreateRoleDialog({ open, onClose, companyId, onSuccess }: Props) {
+function RoleDialog({ open, onClose, companyId, role, onSuccess }: Props) {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     const [permissions, setPermissions] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    const isEditMode = Boolean(role);
+
+    // Следим за изменением выбранной роли при открытии/закрытии
+    useEffect(() => {
+        if (open) {
+            if (role) {
+                // Если редактируем — заполняем существующими данными
+                setName(role.name);
+                setDescription(role.description || "");
+                setPermissions(role.permissions || []);
+            } else {
+                // Если создаем — очищаем форму
+                setName("");
+                setDescription("");
+                setPermissions([]);
+            }
+            setError("");
+        }
+    }, [role, open]);
 
     const handleTogglePermission = (permission: string) => {
         setPermissions((prev) =>
@@ -46,12 +68,23 @@ function CreateRoleDialog({ open, onClose, companyId, onSuccess }: Props) {
             setLoading(true);
             setError("");
 
-            await createRole(companyId, {
+            const payload = {
                 companyId,
                 name: name.trim(),
                 description: description.trim(),
                 permissions,
-            });
+            };
+
+            if (isEditMode && role) {
+                // Вызов API обновления
+                await updateRole(companyId, role.id, payload);
+            } else {
+                // Вызов API создания
+                await createRole(companyId, {
+                    companyId,
+                    ...payload
+                });
+            }
 
             await onSuccess();
             handleCancel();
@@ -63,8 +96,11 @@ function CreateRoleDialog({ open, onClose, companyId, onSuccess }: Props) {
     }
 
     return (
-        <Dialog open={open} onClose={handleCancel} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-            <DialogTitle sx={{ fontWeight: 700 }}>Создание новой роли</DialogTitle>
+        <Dialog open={open} onClose={handleCancel} maxWidth="md" fullWidth>
+            {/* Динамический заголовок */}
+            <DialogTitle sx={{ fontWeight: 700 }}>
+                {isEditMode ? "Редактирование роли" : "Создание новой роли"}
+            </DialogTitle>
 
             <DialogContent dividers>
                 {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
@@ -103,22 +139,24 @@ function CreateRoleDialog({ open, onClose, companyId, onSuccess }: Props) {
                         <Grid container spacing={2}>
                             {COMPANY_PERMISSIONS.map((permission) => {
                                 const meta = PERMISSION_TRANSLATIONS[permission] || { label: permission, desc: "Дополнительное системное разрешение" };
+                                const isChecked = permissions.includes(permission);
+
                                 return (
                                     <Grid size={{ xs: 12, sm: 6 }} key={permission}>
                                         <Box
                                             sx={{
                                                 p: 1.5,
                                                 border: "1px solid",
-                                                borderColor: permissions.includes(permission) ? "primary.light" : "divider",
+                                                borderColor: isChecked ? "primary.light" : "divider",
                                                 borderRadius: 2,
-                                                bgcolor: permissions.includes(permission) ? "rgba(53, 91, 61, 0.02)" : "transparent",
+                                                bgcolor: isChecked ? "rgba(53, 91, 61, 0.02)" : "transparent",
                                                 transition: "all 0.2s"
                                             }}
                                         >
                                             <FormControlLabel
                                                 control={
                                                     <Checkbox
-                                                        checked={permissions.includes(permission)}
+                                                        checked={isChecked}
                                                         onChange={() => handleTogglePermission(permission)}
                                                         disabled={loading}
                                                     />
@@ -149,17 +187,24 @@ function CreateRoleDialog({ open, onClose, companyId, onSuccess }: Props) {
                     Отмена
                 </Button>
 
+                {/* Динамический текст кнопки */}
                 <Button
                     variant="contained"
                     onClick={handleSubmit}
                     disabled={loading || !name.trim()}
                     sx={{ textTransform: "none", borderRadius: 2, minWidth: 100, height: 38 }}
                 >
-                    {loading ? <CircularProgress size={22} color="inherit" /> : "Создать роль"}
+                    {loading ? (
+                        <CircularProgress size={22} color="inherit" />
+                    ) : isEditMode ? (
+                        "Сохранить изменения"
+                    ) : (
+                        "Создать роль"
+                    )}
                 </Button>
             </DialogActions>
         </Dialog>
     );
 }
 
-export default CreateRoleDialog;
+export default RoleDialog;

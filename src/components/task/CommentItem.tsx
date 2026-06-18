@@ -8,7 +8,6 @@ import type { TaskCommentDto } from "@/types/task";
 interface CommentItemProps {
     comment: TaskCommentDto;
     onDeleteComment: (id: number) => void;
-    // Вспомогательные функции, которые мы уже используем в TaskDialog
     getInitials: (name: string) => string;
     isImageFile: (name: string) => boolean;
     SecureImage: React.ComponentType<{ src: string; alt: string; onClick: (url: string) => void }>;
@@ -54,96 +53,122 @@ export function CommentItem({ comment, onDeleteComment, getInitials, isImageFile
                         {comment.commentText}
                     </Typography>
 
-                    {/* РЕНДЕР ОТЕЛЬНЫХ ВЛОЖЕНИЙ КОММЕНТАРИЯ */}
+                    {/* РЕНДЕР ОТДЕЛЬНЫХ ВЛОЖЕНИЙ КОММЕНТАРИЯ */}
                     {loadingFiles ? (
                         <CircularProgress size={14} sx={{ mt: 1 }} />
                     ) : (
                         attachments.length > 0 && (
                             <Stack spacing={1} sx={{ mt: 1 }}>
-                                {/* 1. Секция картинок */}
+
+                                {/* 1. СЕКЦИЯ КАРТИНОК */}
                                 {attachments.some(att => isImageFile(att.media.fileName)) && (
                                     <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                                        {attachments.filter(att => isImageFile(att.media.fileName)).map((att) => (
-                                            <Box
-                                                key={att.id}
-                                                sx={{
-                                                    position: "relative", width: 60, height: 60, borderRadius: 1.5, overflow: "hidden",
-                                                    border: "1px solid", borderColor: "divider", bgcolor: "black",
-                                                    "&:hover .comm-img-overlay": { opacity: 1 }
-                                                }}
-                                            >
-                                                <SecureImage
-                                                    src={att.media.downloadUrl}
-                                                    alt={att.media.fileName}
-                                                    onClick={(src) => window.open(src, "_blank")}
-                                                />
+                                        {attachments.filter(att => isImageFile(att.media.fileName)).map((att) => {
+                                            const file = att.media;
+                                            return (
                                                 <Box
-                                                    className="comm-img-overlay"
+                                                    key={file.id}
                                                     sx={{
-                                                        position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                                                        bgcolor: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center", alignItems: "center", opacity: 0, transition: "opacity 0.2s"
+                                                        position: "relative",
+                                                        width: 60,
+                                                        height: 60,
+                                                        borderRadius: 1.5,
+                                                        overflow: "hidden",
+                                                        border: "1px solid",
+                                                        borderColor: "divider",
+                                                        bgcolor: "black",
+                                                        "&:hover .comm-img-overlay": { opacity: 1 }
                                                     }}
                                                 >
-                                                    <IconButton
-                                                        size="small"
-                                                        sx={{ color: "white" }}
-                                                        onClick={async (e) => {
-                                                            e.stopPropagation();
-                                                            if (window.confirm("Удалить картинку из комментария?")) {
-                                                                try {
-                                                                    await deleteCommentAttachment(comment.id, att.media.id);
-                                                                    setAttachments(prev => prev.filter(a => a.id !== att.id));
-                                                                } catch {
-                                                                    alert("Ошибка удаления файла");
-                                                                }
-                                                            }
+                                                    {/* Изменено: Передаем вычисленный внутренний URL (computedSrc) во window.open */}
+                                                    <SecureImage
+                                                        src={file.downloadUrl}
+                                                        alt={file.fileName}
+                                                        onClick={(computedSrc) => window.open(computedSrc, "_blank")}
+                                                    />
+
+                                                    <Box
+                                                        className="comm-img-overlay"
+                                                        sx={{
+                                                            position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                                                            bgcolor: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center",
+                                                            alignItems: "center", opacity: 0, transition: "opacity 0.2s",
+                                                            pointerEvents: "none"
                                                         }}
                                                     >
-                                                        <DeleteIcon sx={{ fontSize: 14 }} />
-                                                    </IconButton>
+                                                        <IconButton
+                                                            size="small"
+                                                            sx={{ color: "white", pointerEvents: "auto" }}
+                                                            onClick={async (e) => {
+                                                                e.stopPropagation();
+                                                                if (window.confirm("Удалить картинку из комментария?")) {
+                                                                    try {
+                                                                        await deleteCommentAttachment(comment.id, file.id);
+                                                                        setAttachments(prev => prev.filter(a => a.id !== att.id));
+                                                                    } catch {
+                                                                        alert("Ошибка удаления файла");
+                                                                    }
+                                                                }
+                                                            }}
+                                                        >
+                                                            <DeleteIcon sx={{ fontSize: 14 }} />
+                                                        </IconButton>
+                                                    </Box>
                                                 </Box>
-                                            </Box>
-                                        ))}
+                                            );
+                                        })}
                                     </Box>
                                 )}
 
-                                {/* 2. Секция файлов */}
+                                {/* 2. СЕКЦИЯ ОСТАЛЬНЫХ ФАЙЛОВ */}
                                 {attachments.some(att => !isImageFile(att.media.fileName)) && (
                                     <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                                        {attachments.filter(att => !isImageFile(att.media.fileName)).map((att) => (
-                                            <Chip
-                                                key={att.id}
-                                                label={att.media.fileName}
-                                                variant="outlined"
-                                                size="small"
-                                                icon={<FileDownloadIcon style={{ fontSize: 12 }} />}
-                                                onClick={async () => {
-                                                    try {
-                                                        const url = await downloadProtectedFile(att.media.downloadUrl);
-                                                        const link = document.createElement("a");
-                                                        link.href = url;
-                                                        link.setAttribute("download", att.media.fileName);
-                                                        document.body.appendChild(link);
-                                                        link.click();
-                                                        link.remove();
-                                                        URL.revokeObjectURL(url);
-                                                    } catch {
-                                                        alert("Ошибка скачивания файла");
-                                                    }
-                                                }}
-                                                onDelete={async () => {
-                                                    if (window.confirm("Удалить файл?")) {
+                                        {attachments.filter(att => !isImageFile(att.media.fileName)).map((att) => {
+                                            const file = att.media;
+                                            return (
+                                                <Chip
+                                                    key={att.id}
+                                                    label={file.fileName}
+                                                    variant="outlined"
+                                                    size="small"
+                                                    icon={<FileDownloadIcon style={{ fontSize: 12 }} />}
+                                                    onClick={async () => {
                                                         try {
-                                                            await deleteCommentAttachment(comment.id, att.media.id);
-                                                            setAttachments(prev => prev.filter(a => a.id !== att.id));
+                                                            // Синхронизировано: Скачиваем защищенный Blob-объект с авторизационными токенами
+                                                            const secureBlobUrl = await downloadProtectedFile(file.downloadUrl);
+
+                                                            const link = document.createElement("a");
+                                                            link.href = secureBlobUrl;
+                                                            link.setAttribute("download", file.fileName);
+                                                            document.body.appendChild(link);
+                                                            link.click();
+
+                                                            // Чистим за собой следы в оперативной памяти браузера
+                                                            link.remove();
+                                                            URL.revokeObjectURL(secureBlobUrl);
                                                         } catch {
-                                                            alert("Ошибка удаления");
+                                                            alert("Не удалось скачать файл. Ошибка авторизации.");
                                                         }
-                                                    }
-                                                }}
-                                                sx={{ borderRadius: 1, fontSize: "0.75rem", maxWidth: "180px" }}
-                                            />
-                                        ))}
+                                                    }}
+                                                    onDelete={async () => {
+                                                        if (window.confirm("Удалить файл?")) {
+                                                            try {
+                                                                await deleteCommentAttachment(comment.id, file.id);
+                                                                setAttachments(prev => prev.filter(a => a.id !== att.id));
+                                                            } catch {
+                                                                alert("Ошибка удаления");
+                                                            }
+                                                        }
+                                                    }}
+                                                    sx={{
+                                                        borderRadius: 1,
+                                                        fontSize: "0.75rem",
+                                                        maxWidth: "180px",
+                                                        "& .MuiChip-label": { overflow: "hidden", textOverflow: "ellipsis" }
+                                                    }}
+                                                />
+                                            );
+                                        })}
                                     </Box>
                                 )}
                             </Stack>

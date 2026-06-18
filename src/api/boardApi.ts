@@ -79,11 +79,9 @@ export async function createColumn(
         );
 
     } catch (error: any) {
-
         console.log(
             error.response?.data,
         );
-
         throw error;
     }
 }

@@ -59,6 +59,7 @@ function AssignRoleDialog({
         <Dialog
             open={open}
             onClose={onClose}
+            fullWidth
         >
 
             <DialogTitle>

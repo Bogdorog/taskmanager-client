@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import {getCompany} from "@/api/companyApi.ts";
-import {getBoards} from "@/api/boardApi.ts"; // Импортируем для проверки типа ошибки
+import {getBoards} from "@/api/boardApi.ts";
 
 export function useCompanyData(companyId: number) {
     return useQuery({
@@ -15,17 +15,13 @@ export function useCompanyData(companyId: number) {
                 ]);
                 return { company, boards };
             } catch (err) {
-                // Извлекаем детальное сообщение от бэкенда, если оно есть
                 let backendMessage = "Неизвестная ошибка сервера";
 
                 if (axios.isAxiosError(err) && err.response?.data) {
-                    // Обычно бэкенд возвращает ошибку в поле message, error или text
                     backendMessage = err.response.data.message || err.response.data.error || backendMessage;
                 } else if (err instanceof Error) {
                     backendMessage = err.message;
                 }
-
-                // Выбрасываем новую ошибку с детальным описанием для React Query
                 throw new Error(backendMessage, { cause: err });
             }
         },

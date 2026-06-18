@@ -63,8 +63,8 @@ function CompanyCard({ company }: { company: CompanyDto }) {
 
             <Box>
                 <Box sx={{ mb: 2, fontSize: "0.85rem", color: "text.secondary" }}>
-                    {company.email && <Typography variant="caption" display="block">{company.email}</Typography>}
-                    {company.phone && <Typography variant="caption" display="block">{company.phone}</Typography>}
+                    {company.email && <Typography variant="caption" sx={{display: "block"}}>{company.email}</Typography>}
+                    {company.phone && <Typography variant="caption" sx={{display: "block"}}>{company.phone}</Typography>}
                 </Box>
 
                 <Button

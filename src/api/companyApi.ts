@@ -81,7 +81,7 @@ export const inviteUser =
     async (
         companyId: number,
         data: {
-            userId: number;
+            user: string;
             roleId: number;
         }
     ): Promise<void> => {
@@ -91,6 +91,13 @@ export const inviteUser =
             data
         );
     };
+
+/**
+ * Уволить (удалить) участника из компании
+ */
+export async function removeCompanyMember(companyId: number, membershipId: number): Promise<void> {
+    await api.delete(`/companies/${companyId}/members/${membershipId}`);
+}
 
 export async function getMyPermissions(
     companyId: number
@@ -134,18 +141,29 @@ export async function createRole(
     );
 }
 
-export async function assignRole(
+/**
+ * Обновить существующую роль внутри компании
+ */
+export async function updateRole(
     companyId: number,
-    membershipId: number,
-    roleId: number
+    roleId: number,
+    request: RoleRequest
 ): Promise<void> {
+    await api.put(`/${companyId}/role/${roleId}`, request);
+}
 
-    await api.put(
-        `/companies/${companyId}/members/${membershipId}/role`,
-        {
-            roleId,
-        }
-    );
+/**
+ * Назначить роль участнику компании
+ */
+export async function assignRole(companyId: number, membershipId: number, roleId: number): Promise<void> {
+    await api.put(`/companies/${companyId}/members/${membershipId}/role`, { roleId });
+}
+
+/**
+ * Удалить роль внутри компании
+ */
+export async function deleteCompanyRole(companyId: number, roleId: number): Promise<void> {
+    await api.delete(`/companies/${companyId}/roles/${roleId}`);
 }
 
 export async function transferOwnership(

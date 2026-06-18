@@ -19,7 +19,7 @@ function AvatarUpload({ onUpload, onDelete, showDelete, disabled }: AvatarUpload
 
     return (
         <Box sx={{ mt: 2 }}>
-            <Stack direction="row" sx={{ spacing: 1, justifyContent: "center" }}>
+            <Stack direction="row" spacing={2} sx={{ justifyContent: "center" }}>
                 <Button variant="outlined" component="label" disabled={disabled} sx={{ borderRadius: 2, textTransform: "none" }}>
                     Изменить фото
                     <input hidden type="file" accept="image/*" onChange={handleChange} />
@@ -27,7 +27,7 @@ function AvatarUpload({ onUpload, onDelete, showDelete, disabled }: AvatarUpload
 
                 {showDelete && (
                     <Button
-                        variant="text"
+                        variant="outlined"
                         color="error"
                         disabled={disabled}
                         onClick={onDelete}

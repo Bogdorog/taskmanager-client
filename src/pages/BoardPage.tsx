@@ -1,16 +1,14 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Box, CircularProgress, Typography, Button, Stack, Paper, Alert } from "@mui/material";
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import AddBoxIcon from "@mui/icons-material/AddBox";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
-
-import {getBoard, createColumn, deleteBoard, updateBoard, deleteColumn, moveColumn, updateColumn} from "@/api/boardApi";
-import { createTask, moveTask } from "@/api/taskApi";
+import { deleteBoard } from "@/api/boardApi";
 import type { BoardDto } from "@/types/board";
-import type { TaskPriority } from "@/types/task";
 import { getApiErrorMessage } from "@/utils/apiError";
-
+import { useBoardData } from "@/hooks/useBoardData";
+import { useBoardMutations } from "@/hooks/useBoardMutations";
 import BoardColumn from "@/components/board/BoardColumn";
 import CreateColumnDialog from "@/components/board/CreateColumnDialog.tsx";
 import EditBoardDialog from "@/components/board/EditBoardDialog.tsx";
@@ -18,86 +16,80 @@ import CreateTaskDialog from "@/components/task/CreateTaskDialog.tsx";
 import TaskDialog from "@/components/task/TaskDialog.tsx";
 import BackButton from "@/components/utils/BackButton.tsx";
 import EditColumnDialog from "@/components/board/EditColumnDialog.tsx";
-import type {CompanyMembershipDto} from "@/types/company.ts";
-import {getCompanyMembers} from "@/api/companyApi.ts";
+import { useQueryClient } from "@tanstack/react-query";
+import type {TaskPriority} from "@/types/task.ts";
 
 function BoardPage() {
-    const { id: companyId, boardId } = useParams<{ id: string; boardId: string}>();
+    const { id: companyIdStr, boardId: boardIdStr } = useParams<{ id: string; boardId: string }>();
+    const companyId = Number(companyIdStr);
+    const boardId = Number(boardIdStr);
     const navigate = useNavigate();
-
+    const queryClient = useQueryClient();
+    const { data, isLoading, error: queryError } = useBoardData(companyId, boardId);
+    const companyUsers = data?.companyUsers || [];
     const [board, setBoard] = useState<BoardDto | null>(null);
-    const [companyUsers, setCompanyUsers] = useState<CompanyMembershipDto[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
 
-    // Состояния диалоговых окон
+    // Подтягиваем свежие данные из React Query в наш локальный стейт, когда они приходят/обновляются
+    useEffect(() => {
+        if (data?.board) {
+            setBoard(data.board);
+        }
+    }, [data?.board]);
+
+    const mutations = useBoardMutations(companyId, boardId);
+
+    const [error, setError] = useState("");
+    const [editMode, setEditMode] = useState(false);
+
+    // Состояния окон
     const [columnDialogOpen, setColumnDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [editColumnOpen, setEditColumnOpen] = useState(false);
     const [createTaskOpen, setCreateTaskOpen] = useState(false);
     const [taskDialogOpen, setTaskDialogOpen] = useState(false);
 
-    const [editMode, setEditMode] = useState(false);
     const [selectedColumnId, setSelectedColumnId] = useState<number | null>(null);
     const [selectedColumnName, setSelectedColumnName] = useState("");
     const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
 
-    const fetchBoardData = async () => {
-        if (!boardId) return;
-        try {
-            const [membersData, boardsData] = await Promise.all([
-                getCompanyMembers(Number(companyId)),
-                getBoard(Number(boardId))
-            ]);
-            setCompanyUsers(membersData);
-            setBoard(boardsData);
-        } catch (err: unknown) {
-            setError(getApiErrorMessage(err));
-        }
-    };
-
-    useEffect(() => {
-        if (boardId) {
-            setLoading(true);
-            fetchBoardData().finally(() => setLoading(false));
-        }
-    }, [boardId]);
-
+    // Обработчики диалогов
     async function handleCreateColumn(name: string) {
-        if (!board) return;
-        try {
-            await createColumn({ boardId: board.id, name });
-            await fetchBoardData();
-        } catch (err: unknown) {
-            setError(getApiErrorMessage(err));
-        }
+        mutations.createColumnMutation.mutate(name, {
+            onSuccess: () => setColumnDialogOpen(false),
+            onError: (err) => setError(getApiErrorMessage(err))
+        });
     }
 
     async function handleUpdateColumn(newName: string) {
-        if (!board || !selectedColumnId) return;
-        try {
-            await updateColumn(board.id, selectedColumnId, { name: newName });
-            await fetchBoardData();
-        } catch (err: unknown) {
-            setError(getApiErrorMessage(err));
-        }
+        if (!selectedColumnId) return;
+        mutations.updateColumnMutation.mutate(
+            { columnId: selectedColumnId, name: newName },
+            {
+                onSuccess: () => {
+                    setEditColumnOpen(false);
+                    setSelectedColumnId(null);
+                    setSelectedColumnName("");
+                },
+                onError: (err) => setError(getApiErrorMessage(err))
+            }
+        );
     }
 
     async function handleUpdateBoard(name: string, description: string) {
-        if (!board) return;
-        try {
-            const updated = await updateBoard({ boardId: board.id, name, description });
-            setBoard(updated);
-            setEditDialogOpen(false);
-        } catch (err: unknown) {
-            setError(getApiErrorMessage(err));
-        }
+        mutations.updateBoardMutation.mutate(
+            { name, description },
+            {
+                onSuccess: () => setEditDialogOpen(false),
+                onError: (err) => setError(getApiErrorMessage(err))
+            }
+        );
     }
 
     async function handleDeleteBoard() {
         if (!board || !window.confirm("Вы уверены, что хотите безвозвратно удалить эту доску?")) return;
         try {
             await deleteBoard(board.id);
+            queryClient.invalidateQueries({ queryKey: ["companyBoards", companyId] });
             navigate(-1);
         } catch (err: unknown) {
             setError(getApiErrorMessage(err));
@@ -105,13 +97,10 @@ function BoardPage() {
     }
 
     async function handleDeleteColumn(columnId: number) {
-        if (!board || !window.confirm("Удалить колонку вместе со всеми задачами внутри нее?")) return;
-        try {
-            await deleteColumn(board.id, columnId);
-            await fetchBoardData();
-        } catch (err: unknown) {
-            setError(getApiErrorMessage(err));
-        }
+        if (!window.confirm("Удалить колонку вместе со всеми задачами внутри нее?")) return;
+        mutations.deleteColumnMutation.mutate(columnId, {
+            onError: (err) => setError(getApiErrorMessage(err))
+        });
     }
 
     async function handleCreateTask(
@@ -121,22 +110,19 @@ function BoardPage() {
         assignedUserId: number | null,
         dueDate: string | null
     ) {
-        if (!board || !selectedColumnId) return;
-        try {
-            await createTask({
-                companyId: Number(companyId),
-                columnId: selectedColumnId,
-                title,
-                description,
-                priority,
-                assignedUserId,
-                dueDate,
-            });
-            await fetchBoardData();
-            setCreateTaskOpen(false);
-        } catch (err: unknown) {
-            setError(getApiErrorMessage(err));
-        }
+        if (!selectedColumnId) return;
+        mutations.createTaskMutation.mutate({
+            companyId,
+            columnId: selectedColumnId,
+            title,
+            description,
+            priority,
+            assignedUserId,
+            dueDate,
+        }, {
+            onSuccess: () => setCreateTaskOpen(false),
+            onError: (err) => setError(getApiErrorMessage(err))
+        });
     }
 
     async function handleDragEnd(result: DropResult) {
@@ -151,18 +137,18 @@ function BoardPage() {
             const updatedColumns = [...board.columns];
             const [removed] = updatedColumns.splice(source.index, 1);
             updatedColumns.splice(destination.index, 0, removed);
-
             setBoard({ ...board, columns: updatedColumns });
 
             try {
-                await moveColumn({
+                await mutations.moveColumnMutation.mutateAsync({
                     boardId: board.id,
                     columnId: removed.id,
                     newIndex: destination.index,
                 });
             } catch (err: unknown) {
                 setError(getApiErrorMessage(err));
-                void fetchBoardData();
+                // В случае критической ошибки API обновляем кэш из React Query
+                queryClient.invalidateQueries({ queryKey: ["boardPage", companyId, boardId] });
             }
             return;
         }
@@ -171,7 +157,6 @@ function BoardPage() {
         const sourceColumnId = Number(source.droppableId);
         const destinationColumnId = Number(destination.droppableId);
 
-        // Если задачу бросили в ту же ячейку, где она и была — ничего не делаем
         if (sourceColumnId === destinationColumnId && source.index === destination.index) return;
 
         const sourceColIndex = board.columns.findIndex(c => c.id === sourceColumnId);
@@ -192,23 +177,26 @@ function BoardPage() {
         newColumns[sourceColIndex] = { ...sourceColumn, tasks: sourceTasks };
         newColumns[destColIndex] = { ...destColumn, tasks: destTasks };
 
-        // Оптимистичное обновление UI
         setBoard({ ...board, columns: newColumns });
 
-        // Шлем запрос на сервер только если сменилась колонка
         if (sourceColumnId !== destinationColumnId) {
             try {
-                await moveTask(movedTask.id, {
-                    newColumnId: destinationColumnId,
+                const taskId = Number(result.draggableId.replace(/^\D+/g, ""));
+
+                await mutations.moveTaskMutation.mutateAsync({
+                    taskId,
+                    payload: { newColumnId: destinationColumnId },
                 });
             } catch (err: unknown) {
                 setError(getApiErrorMessage(err));
-                void fetchBoardData(); // Откат интерфейса к актуальной структуре бэка
+                // При ошибке откатываемся к валидным данным сервера
+                queryClient.invalidateQueries({ queryKey: ["boardPage", companyId, boardId] });
             }
         }
     }
 
-    if (loading) {
+    // Первичная загрузка страницы проверяется по isLoading из React Query
+    if (isLoading && !board) {
         return (
             <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "80vh" }}>
                 <CircularProgress />
@@ -216,9 +204,13 @@ function BoardPage() {
         );
     }
 
-    if (!board) {
+    if (queryError || !board) {
         return (
-            <Box sx={{ p: 4 }}><Alert severity="warning">Доска не найдена</Alert></Box>
+            <Box sx={{ p: 4 }}>
+                <Alert severity="warning">
+                    {queryError ? getApiErrorMessage(queryError) : "Доска не найдена"}
+                </Alert>
+            </Box>
         );
     }
 
@@ -331,7 +323,8 @@ function BoardPage() {
                 open={createTaskOpen}
                 onClose={() => setCreateTaskOpen(false)}
                 onSubmit={handleCreateTask}
-                users={companyUsers}/>
+                users={companyUsers}
+            />
             <EditColumnDialog
                 open={editColumnOpen}
                 initialName={selectedColumnName}
@@ -349,7 +342,9 @@ function BoardPage() {
                     setTaskDialogOpen(false);
                     setSelectedTaskId(null);
                 }}
-                onUpdated={fetchBoardData}
+                onUpdated={async () => {
+                    await queryClient.invalidateQueries({ queryKey: ["boardPage", companyId, boardId] });
+                }}
             />
         </Paper>
     );

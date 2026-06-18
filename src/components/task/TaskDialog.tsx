@@ -465,7 +465,6 @@ function TaskDialog({ open, taskId, onClose, onUpdated }: Props) {
                                                                     "&:hover .image-overlay": { opacity: 1 }
                                                                 }}
                                                             >
-                                                                {/* Наш новый компонент с авторизацией */}
                                                                 <SecureImage
                                                                     src={file.downloadUrl}
                                                                     alt={file.fileName}

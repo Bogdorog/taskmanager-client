@@ -1,8 +1,25 @@
-import { Avatar, Box, Paper, Typography, Chip, List, ListItem, ListItemAvatar, ListItemText, Divider } from "@mui/material";
+import { useState } from "react";
+import {
+    Paper, Typography, List, Box, ListItem, ListItemAvatar, Avatar, ListItemText,
+    Divider, Chip, IconButton, Tooltip, Stack
+} from "@mui/material";
 import BadgeIcon from "@mui/icons-material/Badge";
-import type { CompanyMembershipDto } from "@/types/company";
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import EditIcon from "@mui/icons-material/Edit";
+import AssignRoleDialog from "./AssignRoleDialog"; // Твой диалог
+import { removeCompanyMember } from "@/api/companyApi";
+import { getApiErrorMessage } from "@/utils/apiError";
+import type { CompanyMembershipDto, CompanyRoleDto } from "@/types/company";
+import type { CompanyPermissions } from "@/types/company-permissions";
 
-// Функция генерации приятного цвета на основе хэша логина участника
+interface CompanyMembersProps {
+    members: CompanyMembershipDto[];
+    companyId: number;
+    roles: CompanyRoleDto[];
+    permissions: CompanyPermissions | null;
+    onUpdate: () => Promise<void>;
+}
+
 function stringToColor(string: string) {
     let hash = 0;
     for (let i = 0; i < string.length; i += 1) {
@@ -17,16 +34,37 @@ function stringToColor(string: string) {
 }
 
 function getInitials(fullName: string) {
-    return fullName
-        .split(" ")
-        .filter(Boolean)
-        .map((word) => word[0])
-        .slice(0, 2) // Берем максимум 2 буквы (Имя, Фамилия)
-        .join("")
-        .toUpperCase();
+    return fullName.split(" ").filter(Boolean).map((word) => word[0]).slice(0, 2).join("").toUpperCase();
 }
 
-function CompanyMembers({ members }: { members: CompanyMembershipDto[] }) {
+function CompanyMembers({ members, companyId, roles, permissions, onUpdate }: CompanyMembersProps) {
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [selectedMembershipId, setSelectedMembershipId] = useState<number | null>(null);
+    const [error, setError] = useState("");
+
+    const OWNER_ROLE = "OWNER";
+    // Проверка права управления членами команды
+    const canManage = permissions?.canManageMembers ?? false;
+
+    const handleOpenAssignDialog = (membershipId: number) => {
+        setSelectedMembershipId(membershipId);
+        setDialogOpen(true);
+    };
+
+    const handleRemoveMember = async (membershipId: number, fullName: string) => {
+        if (!window.confirm(`Вы уверены, что хотите исключить (уволить) сотрудника ${fullName} из компании?`)) {
+            return;
+        }
+
+        try {
+            setError("");
+            await removeCompanyMember(companyId, membershipId);
+            await onUpdate(); // Реактивно обновляем список
+        } catch (err) {
+            alert(getApiErrorMessage(err));
+        }
+    };
+
     return (
         <Paper
             elevation={2}
@@ -42,55 +80,100 @@ function CompanyMembers({ members }: { members: CompanyMembershipDto[] }) {
             </Typography>
 
             <List disablePadding>
-                {members.map((member, index) => (
-                    <Box key={member.id}>
-                        <ListItem
-                            secondaryAction={
-                                <Chip
-                                    label={member.role.name}
-                                    variant="className"
-                                    size="small"
-                                    sx={{
-                                        fontWeight: 600,
-                                        bgcolor: "rgba(53, 91, 61, 0.08)",
-                                        color: "primary.main",
-                                        borderRadius: 1.5
-                                    }}
+                {members.map((member, index) => {
+                    const isOwner = member.role.name === OWNER_ROLE;
+
+                    return (
+                        <Box key={member.id}>
+                            <ListItem
+                                secondaryAction={
+                                    <Stack direction="row" spacing={1.5}  sx={{ alignItems: "center" }}>
+                                        {/* Смена роли */}
+                                        <Tooltip title={canManage && !isOwner ? "Изменить роль" : ""}>
+                                            <Chip
+                                                label={isOwner ? "ВЛАДЕЛЕЦ" : member.role.name}
+                                                onClick={canManage && !isOwner ? () => handleOpenAssignDialog(member.id) : undefined}
+                                                onDelete={canManage && !isOwner ? () => handleOpenAssignDialog(member.id) : undefined}
+                                                deleteIcon={<EditIcon style={{ fontSize: 14, color: "inherit" }} />}
+                                                sx={{
+                                                    fontWeight: 600,
+                                                    bgcolor: isOwner ? "rgba(25, 118, 210, 0.08)" : "rgba(53, 91, 61, 0.08)",
+                                                    color: isOwner ? "primary.main" : "success.main",
+                                                    borderRadius: 1.5,
+                                                    cursor: canManage && !isOwner ? "pointer" : "default"
+                                                }}
+                                            />
+                                        </Tooltip>
+
+                                        {/* Иконка увольнения сотрудника */}
+                                        {canManage && !isOwner && (
+                                            <Tooltip title="Исключить из компании">
+                                                <IconButton
+                                                    color="error"
+                                                    size="small"
+                                                    onClick={() => handleRemoveMember(member.id, member.user.fullName)}
+                                                    sx={{
+                                                        border: "1px solid",
+                                                        borderColor: "error.light",
+                                                        borderRadius: 2,
+                                                        p: 0.6
+                                                    }}
+                                                >
+                                                    <DeleteOutlinedIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                        )}
+                                    </Stack>
+                                }
+                                sx={{ py: 2, px: 1 }}
+                            >
+                                <ListItemAvatar>
+                                    <Avatar
+                                        sx={{
+                                            width: 46,
+                                            height: 46,
+                                            fontSize: 16,
+                                            fontWeight: 600,
+                                            bgcolor: stringToColor(member.user.login),
+                                            color: "#fff"
+                                        }}
+                                    >
+                                        {getInitials(member.user.fullName)}
+                                    </Avatar>
+                                </ListItemAvatar>
+                                <ListItemText
+                                    primary={
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "text.primary" }}>
+                                            {member.user.fullName}
+                                        </Typography>
+                                    }
+                                    secondary={
+                                        <Typography variant="body2" color="text.secondary">
+                                            @{member.user.login}
+                                        </Typography>
+                                    }
                                 />
-                            }
-                            sx={{ py: 2, px: 1 }}
-                        >
-                            <ListItemAvatar>
-                                <Avatar
-                                    sx={{
-                                        width: 46,
-                                        height: 46,
-                                        fontSize: 16,
-                                        fontWeight: 600,
-                                        bgcolor: stringToColor(member.user.login),
-                                        color: "#fff"
-                                    }}
-                                >
-                                    {getInitials(member.user.fullName)}
-                                </Avatar>
-                            </ListItemAvatar>
-                            <ListItemText
-                                primary={
-                                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "text.primary" }}>
-                                        {member.user.fullName}
-                                    </Typography>
-                                }
-                                secondary={
-                                    <Typography variant="body2" color="text.secondary">
-                                        @{member.user.login}
-                                    </Typography>
-                                }
-                            />
-                        </ListItem>
-                        {index < members.length - 1 && <Divider component="li" />}
-                    </Box>
-                ))}
+                            </ListItem>
+                            {index < members.length - 1 && <Divider component="li" />}
+                        </Box>
+                    );
+                })}
             </List>
+
+            {/* Диалог изменения роли */}
+            {selectedMembershipId !== null && (
+                <AssignRoleDialog
+                    open={dialogOpen}
+                    onClose={() => {
+                        setDialogOpen(false);
+                        setSelectedMembershipId(null);
+                    }}
+                    companyId={companyId}
+                    membershipId={selectedMembershipId}
+                    roles={roles.filter(r => r.name !== OWNER_ROLE)} // Нельзя выдать роль OWNER через диалог
+                    onSuccess={onUpdate}
+                />
+            )}
         </Paper>
     );
 }
