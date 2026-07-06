@@ -62,3 +62,17 @@ export const changePassword =
             data
         );
     };
+
+/**
+ * Запрос на отправку письма для удаления
+ */
+export async function requestAccountDeletion(): Promise<void> {
+    await api.delete("/user/me");
+}
+
+/**
+ * Подтверждение удаления аккаунта по токену
+ */
+export async function confirmAccountDeletion(token: string): Promise<void> {
+    await api.post(`/auth/account-delete/${token}`);
+}

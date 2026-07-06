@@ -1,4 +1,5 @@
 import {
+    Alert,
     Box,
     Button,
     Divider,
@@ -16,6 +17,11 @@ import UserAvatar
 import {
     getRoleLabel
 } from "@/utils/role.ts";
+import {DeleteForeverOutlined} from "@mui/icons-material";
+import {useState} from "react";
+import {useMutation} from "@tanstack/react-query";
+import {getApiErrorMessage} from "@/utils/apiError.ts";
+import {requestAccountDeletion} from "@/api/userApi.ts";
 
 function InfoRow({
     label,
@@ -72,6 +78,28 @@ function ProfileView({
     onChangePassword: () => void;
     onLogout: () => void;
 }) {
+
+    const [successMessage, setSuccessMessage] = useState("");
+    const [errorMessage, setErrorMessage] = useState("");
+
+    // Мутация для запроса удаления аккаунта
+    const deleteRequestMutation = useMutation({
+        mutationFn: requestAccountDeletion,
+        onSuccess: () => {
+            setSuccessMessage("Ссылка для подтверждения удаления аккаунта отправлена на вашу электронную почту.");
+            setErrorMessage("");
+        },
+        onError: (err) => {
+            setErrorMessage(getApiErrorMessage(err));
+            setSuccessMessage("");
+        }
+    });
+
+    function handleDeleteClick() {
+        if (window.confirm("Вы уверены, что хотите запросить удаление аккаунта? На вашу почту придет письмо со ссылкой для подтверждения.")) {
+            deleteRequestMutation.mutate();
+        }
+    }
 
     return (
         <Paper
@@ -159,19 +187,19 @@ function ProfileView({
 
             <Divider />
 
-            <Box
-                sx={{
-                    p: 5,
-                }}
-            >
+            <Box sx={{ p: 5 }}>
+                {successMessage && (
+                    <Alert severity="success" sx={{ mb: 3, borderRadius: 3 }}>
+                        {successMessage}
+                    </Alert>
+                )}
+                {errorMessage && (
+                    <Alert severity="error" sx={{ mb: 3, borderRadius: 3 }} onClose={() => setErrorMessage("")}>
+                        {errorMessage}
+                    </Alert>
+                )}
 
-                <Typography
-                    variant="h5"
-                    sx={{
-                        fontWeight: 700,
-                        mb: 3,
-                    }}
-                >
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
                     Информация о пользователе
                 </Typography>
 
@@ -241,6 +269,17 @@ function ProfileView({
                         sx={{ borderRadius: 3, textTransform: "none" }}
                     >
                         Выйти из аккаунта
+                    </Button>
+
+                    <Button
+                        variant="contained"
+                        color="error"
+                        startIcon={<DeleteForeverOutlined />}
+                        onClick={handleDeleteClick}
+                        disabled={deleteRequestMutation.isPending}
+                        sx={{ borderRadius: 3, textTransform: "none", ml: { sm: "auto" }, fontWeight: 600 }}
+                    >
+                        Удалить аккаунт
                     </Button>
 
                 </Box>

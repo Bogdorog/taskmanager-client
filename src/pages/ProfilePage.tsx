@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, CircularProgress, Alert } from "@mui/material";
+import { Box, CircularProgress, Alert, } from "@mui/material";
 import { useProfile } from "@/hooks/useProfile";
 
 import ProfileView from "@/components/profile/ProfileView";
@@ -11,6 +11,7 @@ function ProfilePage() {
     const { user, isLoading, error, logout } = useProfile();
     const [editMode, setEditMode] = useState(false);
     const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+
 
     if (isLoading) {
         return (

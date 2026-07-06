@@ -43,6 +43,7 @@ import PasswordResetPage from "@/pages/PasswordResetPage.tsx";
 import PasswordResetConfirmPage from "@/pages/PasswordResetConfirmPage.tsx";
 import EditCompanyPage from "@/pages/EditCompanyPage.tsx";
 import DeleteCompanyPage from "@/pages/DeleteCompanyPage.tsx";
+import ConfirmDeletePage from "@/pages/ConfirmDeletePage.tsx";
 
 function AppRouter() {
 
@@ -83,6 +84,9 @@ function AppRouter() {
                                 <PasswordResetConfirmPage />
                             }
                         />
+
+                        <Route path="/account-delete"
+                               element={<ConfirmDeletePage />} />
 
                         <Route
                             path="/profile"

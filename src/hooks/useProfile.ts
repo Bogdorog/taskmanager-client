@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {deleteUserAvatar, getCurrentUser, updateProfile, uploadUserAvatar} from "@/api/userApi";
+import {
+    deleteUserAvatar, getCurrentUser, updateProfile, uploadUserAvatar
+} from "@/api/userApi";
 import {useNavigate} from "react-router-dom";
 
 const QUERY_KEY = ["currentUser"];
