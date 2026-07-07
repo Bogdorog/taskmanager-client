@@ -60,6 +60,20 @@ function RegisterPage() {
             }
         }
 
+        if (name === "login" && value.trim()) {
+            const passwordRegex = /^[a-zA-Z0-9!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]+$/;
+            if (!passwordRegex.test(value)) {
+                errorMsg = "Логин может содержать только английские буквы, цифры и спецсимволы";
+            }
+        }
+
+        if (name === "password" && value.trim()) {
+            const passwordRegex = /^[a-zA-Zа-яА-ЯёЁ0-9!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]+$/;
+            if (!passwordRegex.test(value)) {
+                errorMsg = "Пароль может содержать только английские буквы, русские буквы, цифры и спецсимволы";
+            }
+        }
+
         setFieldErrors((prev) => ({
             ...prev,
             [name]: errorMsg,
@@ -221,7 +235,15 @@ function RegisterPage() {
                             />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField fullWidth type="password" label="Пароль" name="password" value={formData.password} onChange={handleChange} disabled={loading} />
+                            <TextField fullWidth
+                                       type="password"
+                                       label="Пароль"
+                                       name="password"
+                                       value={formData.password}
+                                       onChange={handleChange}
+                                       disabled={loading}
+                                       error={!!fieldErrors.password}
+                                       helperText={fieldErrors.password} />
                         </Grid>
 
                         {/* Секция 2: Личные данные */}

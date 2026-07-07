@@ -52,16 +52,12 @@ export async function deleteUserAvatar(): Promise<UserDto> {
     return response.data;
 }
 
-export const changePassword =
-    async (
-        data: ChangePasswordRequest
-    ): Promise<void> => {
-
-        await api.put(
-            "/user/me/password",
-            data
-        );
-    };
+/**
+ * Смена пароля в профиле
+ */
+export async function changePassword(payload: ChangePasswordRequest): Promise<void> {
+    await api.post("/user/me/change-password", payload);
+}
 
 /**
  * Запрос на отправку письма для удаления
