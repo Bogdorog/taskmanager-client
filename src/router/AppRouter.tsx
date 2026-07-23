@@ -44,6 +44,7 @@ import PasswordResetConfirmPage from "@/pages/PasswordResetConfirmPage.tsx";
 import EditCompanyPage from "@/pages/EditCompanyPage.tsx";
 import DeleteCompanyPage from "@/pages/DeleteCompanyPage.tsx";
 import ConfirmDeletePage from "@/pages/ConfirmDeletePage.tsx";
+import NotificationsPage from "@/pages/NotificationsPage";
 
 function AppRouter() {
 
@@ -96,6 +97,8 @@ function AppRouter() {
                                 </ProtectedRoute>
                             }
                         />
+
+                        <Route path="/notifications" element={<NotificationsPage />} />
 
                         <Route
                             path="/companies"

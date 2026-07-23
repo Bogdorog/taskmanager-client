@@ -9,7 +9,6 @@ const QUERY_KEY = ["currentUser"];
 export function useProfile() {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
-    // Получение текущего пользователя
     const query = useQuery({
         queryKey: QUERY_KEY,
         queryFn: getCurrentUser,
@@ -25,7 +24,6 @@ export function useProfile() {
     const uploadAvatarMutation = useMutation({
         mutationFn: uploadUserAvatar,
         onSuccess: (updatedUser) => {
-            // Прямо обновляем данные пользователя в кэше React Query
             queryClient.setQueryData(QUERY_KEY, updatedUser);
         },
     });
@@ -39,12 +37,10 @@ export function useProfile() {
     });
     // Функция для полного выхода из системы
     const logout = async () => {
-        // Полностью очищаем КЭШ React Query
-        queryClient.clear();
-
-        // Удаляем токены авторизации из хранилища (замени ключи на свои)
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
+        queryClient.clear();
+        window.dispatchEvent(new Event("storage"));
         navigate("/login");
     };
 
@@ -52,11 +48,8 @@ export function useProfile() {
         user: query.data,
         isLoading: query.isLoading,
         error: query.error,
-        // Флаги загрузки для UI (синхронизируем с процессами мутаций)
         isUpdating: updateProfileMutation.isPending,
-        // Аватар считается в процессе загрузки, если выполняется либо добавление, либо удаление
         isUploading: uploadAvatarMutation.isPending || deleteAvatarMutation.isPending,
-        // Методы для вызова в компонентах (используем mutateAsync, чтобы прокидывать ошибки в try/catch формы)
         updateProfile: updateProfileMutation.mutateAsync,
         uploadAvatar: uploadAvatarMutation.mutateAsync,
         removeAvatar: deleteAvatarMutation.mutateAsync,
