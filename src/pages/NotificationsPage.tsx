@@ -36,7 +36,7 @@ function NotificationsPage() {
             setSettingsError("Срок хранения должен быть от 1 до 365 дней");
             return;
         }
-        retentionMutation.mutate(retentionDays);
+        retentionMutation.mutate({days: retentionDays});
     };
 
     if (isLoading) {
@@ -98,12 +98,13 @@ function NotificationsPage() {
                                     >
                                         <ListItemText
                                             primary={
-                                                <Typography variant="body2" sx={{ fontWeight: notif.read ? 400 : 700 }}>
+                                                <Typography variant="body1" sx={{ fontWeight: notif.read ? 400 : 700 }}>
                                                     {formatNotificationText(notif.type, notif.payload)}
                                                 </Typography>
                                             }
                                             secondary={
                                                 <Typography variant="caption" color="text.disabled">
+                                                    <b>{notif.companyName}</b>&ensp;
                                                     {parseNotificationDate(notif.createdAt).toLocaleString([], {
                                                         dateStyle: "short",
                                                         timeStyle: "short"

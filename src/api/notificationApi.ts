@@ -3,7 +3,8 @@ import api from "@/api/axios";
 export interface NotificationEventDto {
     id: number;
     type: string;
-    payload: any;
+    companyName: string;
+    payload: unknown;
     createdAt: string;
     read: boolean;
 }
@@ -33,8 +34,8 @@ export async function markNotificationAsRead(id: number): Promise<void> {
 
 /**
  * Обновление срока хранения уведомлений
- * @param days срок хранения в днях
+ * @param request срок хранения в днях
  */
-export async function updateNotificationRetention(days: number): Promise<void> {
-    await api.put("/notifications/settings/retention", { days });
+export async function updateNotificationRetention(request: UpdateRetentionRequest): Promise<void> {
+    await api.put("/notifications/settings/retention", { request });
 }

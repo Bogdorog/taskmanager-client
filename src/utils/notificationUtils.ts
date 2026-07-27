@@ -14,10 +14,10 @@ export function parseNotificationDate(dateValue: string | number[] | undefined |
 interface NotificationPayload {
     taskTitle?: string;
     columnName?: string;
-    memberName?: string;
+    newMemberName?: string;
     roleName?: string;
-    companyName?: string;
     daysLeft?: number;
+    actorName?: string;
     [key: string]: any;
 }
 
@@ -29,49 +29,42 @@ export function formatNotificationText(type: string, payload: unknown): string {
     if (typeof payload === "string") return payload;
 
     const data = payload as NotificationPayload;
-    const taskTitle = data.taskTitle ? `«${data.taskTitle}»` : "задачи";
-    const companyName = data.companyName ? `в «${data.companyName}»` : "";
-    const roleName = data.roleName ? `«${data.roleName}»` : "";
 
     switch (type) {
         // --- СОБЫТИЯ ЗАДАЧ ---
         case "TASK_CREATED":
-            return `Создана новая задача: ${taskTitle}`;
+            return `Создана новая задача: ${data.taskTitle}`;
 
         case "TASK_UPDATED":
-            return `Изменены параметры задачи ${taskTitle}`;
+            return `Изменены параметры задачи ${data.taskTitle}`;
 
         case "TASK_MOVED":
             return data.columnName
-                ? `Задача ${taskTitle} перемещена в колоночку «${data.columnName}»`
-                : `Задача ${taskTitle} перемещена`;
+                ? `Задача ${data.taskTitle} перемещена в столбец «${data.columnName}»`
+                : `Задача ${data.taskTitle} перемещена`;
 
         case "TASK_DELETED":
-            return `Удалена задача ${taskTitle}`;
+            return `Удалена задача ${data.taskTitle}`;
 
         case "TASK_ASSIGNED":
-            return `Вы назначены исполнителем задачи ${taskTitle}`;
+            return `Вы назначены исполнителем задачи ${data.taskTitle}`;
 
         case "TASK_DEADLINE_APPROACHING":
             return data.daysLeft !== undefined
-                ? `Приближается дедлайн по задаче ${taskTitle} (осталось дней: ${data.daysLeft})`
-                : `Приближается крайний срок по задаче ${taskTitle}`;
+                ? `Приближается дедлайн по задаче ${data.taskTitle} (осталось дней: ${data.daysLeft})`
+                : `Приближается крайний срок по задаче ${data.taskTitle}`;
 
         case "TASK_DEADLINE_OVERDUE":
-            return `⚠️ Просрочен дедлайн по задаче ${taskTitle}!`;
+            return `⚠️ Просрочен дедлайн по задаче ${data.taskTitle}!`;
 
         // --- СОБЫТИЯ УЧАСТНИКОВ И РОЛЕЙ ---
         case "MEMBER_ADDED":
-            return data.memberName
-                ? `Участник ${data.memberName} добавлен ${companyName}`.trim()
-                : `Вы или новый участник добавлены ${companyName}`.trim();
+            return `${data.actorName} добавил(а) ${data.newMemberName} в компанию с ролью ${data.roleName}`;
 
         case "ROLE_ADDED":
-            return roleName
-                ? `Вам присвоена новая роль ${roleName} ${companyName}`.trim()
-                : `Обновлены ваши роли ${companyName}`.trim();
+            return `${data.actorName} создал(а) роль ${data.roleName}`;
 
         default:
-            return data.taskTitle ? `Уведомление по задаче ${taskTitle}` : JSON.stringify(payload);
+            return data.taskTitle ? `Уведомление по задаче ${data.taskTitle}` : JSON.stringify(payload);
     }
 }

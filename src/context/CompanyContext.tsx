@@ -9,12 +9,11 @@ interface Props {
 }
 
 function CompanyProvider({ children }: Props) {
-    const { user } = useAuth(); // Или isAuthenticated, смотря что возвращает твой AuthContext
+    const { user } = useAuth();
     const [companies, setCompanies] = useState<CompanyDto[]>([]);
     const [selectedCompany, setSelectedCompany] = useState<CompanyDto | null>(null);
 
     const refreshCompanies = useCallback(async () => {
-        // Проверяем авторизацию через контекст, а не через localStorage напрямую
         if (!user) {
             setCompanies([]);
             setSelectedCompany(null);
