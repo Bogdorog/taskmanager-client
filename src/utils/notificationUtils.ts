@@ -14,7 +14,7 @@ export function parseNotificationDate(dateValue: string | number[] | undefined |
 interface NotificationPayload {
     taskTitle?: string;
     columnName?: string;
-    newMemberName?: string;
+    memberName?: string;
     roleName?: string;
     daysLeft?: number;
     actorName?: string;
@@ -59,10 +59,25 @@ export function formatNotificationText(type: string, payload: unknown): string {
 
         // --- СОБЫТИЯ УЧАСТНИКОВ И РОЛЕЙ ---
         case "MEMBER_ADDED":
-            return `${data.actorName} добавил(а) ${data.newMemberName} в компанию с ролью ${data.roleName}`;
+            return `${data.actorName} добавил(а) ${data.memberName} в компанию с ролью ${data.roleName}`;
+
+        case "MEMBER_ROLE_CHANGED":
+            return `${data.actorName} назначил(а) ${data.memberName} роль ${data.roleName}`;
+
+        case "MEMBER_DELETED":
+            return `${data.actorName} удалил(а) ${data.memberName} с ролью ${data.roleName} из компании`;
+
+        case "MEMBER_LEFT":
+            return `${data.actorName} с ролью ${data.roleName} покинул(а) компанию`;
 
         case "ROLE_ADDED":
             return `${data.actorName} создал(а) роль ${data.roleName}`;
+
+        case "ROLE_CHANGED":
+            return `${data.actorName} изменил(а) роль ${data.roleName}`;
+
+        case "ROLE_DELETED":
+            return `${data.actorName} удалил(а) роль ${data.roleName}`;
 
         default:
             return data.taskTitle ? `Уведомление по задаче ${data.taskTitle}` : JSON.stringify(payload);
